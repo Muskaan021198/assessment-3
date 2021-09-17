@@ -1,0 +1,236 @@
+---
+title: "Assessment 3.rmd"
+author: "Shaikh muskaan salim  s4660123"
+date: "17/09/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r cars}
+#install.packages("webshot")
+#install.packages("stringr")
+#install.packages("treemapify")
+#install.packages("ggridges")
+
+
+
+```
+
+## LOad Library
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+
+library(tidyverse)
+library(skimr)
+library(RColorBrewer)
+library(networkD3)
+library(htmlwidgets)
+library(waffle)
+library(lubridate)
+library(Hmisc)
+library(viridis)
+library(plotly)
+library(stringr)
+library(treemapify)
+library(ggridges)
+
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+
+# DATA Loading
+
+```{r}
+
+animal_outcomes <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-07-21/animal_outcomes.csv')
+animal_complaints <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-07-21/animal_complaints.csv')
+brisbane_complaints <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-07-21/brisbane_complaints.csv')
+```
+
+The analysis is using 3 different datasets as following
+a) Animal Outcomes
+b) Animal Complaints
+c) Brisbane Complaints
+
+
+# PART1 - Animal Outcome
+
+```{r}
+dim(animal_outcomes)
+```
+Animal outcome dataset is having 664 rows and 12 columns
+
+```{r}
+AO = animal_outcomes %>% mutate_at(vars(year,animal_type,outcome), list(factor))
+skim(AO)
+```
+```{r}
+
+Intake_AO = animal_outcomes %>% group_by(animal_type,year) %>% tally(Total) %>% ggplot(aes(x= year, y = n, group = animal_type, color=animal_type)) + geom_line() + geom_point() + theme(legend.position="top") +  labs(x="Year", y="Intake count", title="Different Type Animal intake by Year", subtitle= "RSPCA Australia Animal Outcomes 1999-2018")
+Intake_AO
+```
+The above graph shows animal intake count over the years
+
+
+```{r}
+dim(animal_outcomes)
+
+```
+
+
+```{r}
+cd_int = animal_outcomes %>% filter(animal_type == "Dogs" | animal_type == "Cats"| animal_type == "Wildlife") %>% group_by(animal_type,year) %>% tally(Total) %>% mutate_at(vars(year,animal_type), list(factor)) %>% as.data.frame()
+
+cd_eth = animal_outcomes %>% filter(animal_type == "Dogs" | animal_type == "Cats"| animal_type == "Wildlife") %>% filter(outcome=="Euthanized") %>% group_by(animal_type,year, outcome) %>% tally(Total) %>% mutate_at(vars(year,animal_type,outcome), list(factor)) %>% as.data.frame() 
+
+cd_reh = animal_outcomes %>% filter(animal_type == "Dogs" | animal_type == "Cats"| animal_type == "Wildlife") %>% filter(outcome=="Rehomed") %>% group_by(animal_type,year, outcome) %>% tally(Total) %>% mutate_at(vars(year,animal_type,outcome), list(factor)) %>% as.data.frame()
+```
+
+```{r}
+cd_int$euth_por= ((cd_eth$n/cd_int$n))
+cd_int %>% filter(animal_type == "Dogs")
+```
+```{r}
+cd_int$euth_por= ((cd_eth$n/cd_int$n))
+cd_int %>% filter(animal_type == "Cats")
+```
+```{r}
+cd_int$euth_por= ((cd_eth$n/cd_int$n))
+cd_int %>% filter(animal_type == "Wildlife")
+```
+
+
+
+
+
+
+
+
+
+
+#PART 2 - Animal Complaints
+
+
+
+```{r}
+
+colnames(animal_complaints)
+```
+
+```{r}
+dim(animal_complaints)
+```
+There are 42413 rows and 7 columns in the dataset
+
+```{r}
+animal_complaints$Year = str_extract(animal_complaints$`Date Received`,"\\w+$")
+
+animal_complaints$Month = str_extract(animal_complaints$`Date Received`,"(\\w+)")
+head(animal_complaints)
+```
+Dataset is updated with Separate Year  & Month fields
+
+```{r}
+AC = animal_complaints 
+skim(AC)
+```
+
+
+```{r}
+
+
+animal_complaints$Year = as.numeric(animal_complaints$Year)
+head(animal_complaints)
+```
+
+
+```{r}
+#bp1 = ggplot(AC) + geom_bar(aes(x=Year, fill= `Complaint Type`)) + facet_wrap(~`Animal Type`, nrow=2) + theme_classic() + scale_fill_brewer(palette="Dark2") + labs(x="Year(date recieved)", y = "Count", title= "Complaints over the years", subtitle= "Animal Complaints 2013 to 2020")
+
+bp1 = ggplot(AC) + geom_bar(aes(x=Year, color=`Complaint Type`))   + labs(x="Year(date recieved)", y = "Count", title= "Complaints over the years", subtitle= "Animal Complaints 2013 to 2020")
+bp1
+```
+
+
+
+
+
+
+# Part 3 : Brisbane Animal Complaint
+
+
+
+
+```{r}
+brisbane_complaints$yearquarter = brisbane_complaints$date_range
+unique(brisbane_complaints$date_range)
+```
+
+
+
+```{r}
+
+dim(brisbane_complaints)
+```
+Brisbane Dataset is having 31330 rows and 8 columns in total
+
+```{r}
+brisbane_complaints$yearquarter = str_replace_all(brisbane_complaints$yearquarter, "1st-quarter-2016-17.csv", "2016-Q1")
+brisbane_complaints$yearquarter = str_replace_all(brisbane_complaints$yearquarter, "apr-jun-2019.csv", "2019-Q2")
+brisbane_complaints$yearquarter = str_replace_all(brisbane_complaints$yearquarter, "apr-to-jun-2018.csv", "2018-Q2")
+brisbane_complaints$yearquarter = str_replace_all(brisbane_complaints$yearquarter, "april-june-2016.csv", "2016-Q2")
+brisbane_complaints$yearquarter = str_replace_all(brisbane_complaints$yearquarter, "april-to-june-2017.csv", "2017-Q2")
+brisbane_complaints$yearquarter = str_replace_all(brisbane_complaints$yearquarter, "cars-srsa-open-data-animal-related-complaints-apr-to-jun-2020.csv", "2020-Q2")
+brisbane_complaints$yearquarter = str_replace_all(brisbane_complaints$yearquarter, "cars-srsa-open-data-animal-related-complaints-jan-to-mar-2020.csv", "2020-Q1")
+brisbane_complaints$yearquarter = str_replace_all(brisbane_complaints$yearquarter, "cars-srsa-open-data-animal-related-complaints-oct-to-dec-2019.csv", "2019-Q4")
+brisbane_complaints$yearquarter = str_replace_all(brisbane_complaints$yearquarter, "jan-mar-2019.csv", "2019-Q1")
+brisbane_complaints$yearquarter = str_replace_all(brisbane_complaints$yearquarter, "jan-to-mar-2018.csv", "2018-Q1")
+brisbane_complaints$yearquarter = str_replace_all(brisbane_complaints$yearquarter, "january-to-march-2017.csv", "2017-Q1")
+brisbane_complaints$yearquarter = str_replace_all(brisbane_complaints$yearquarter, "jul-to-sep-2018.csv", "2018-Q3")
+brisbane_complaints$yearquarter = str_replace_all(brisbane_complaints$yearquarter, "july-to-september-2017.csv", "2017-Q3")
+brisbane_complaints$yearquarter = str_replace_all(brisbane_complaints$yearquarter, "jul-to-sep-2019.csv", "2017-Q3")
+brisbane_complaints$yearquarter = str_replace_all(brisbane_complaints$yearquarter, "oct-to-dec-2018.csv", "2018-Q4")
+brisbane_complaints$yearquarter = str_replace_all(brisbane_complaints$yearquarter, "october-to-december-2016.csv", "2016-Q4")
+brisbane_complaints$yearquarter = str_replace_all(brisbane_complaints$yearquarter, "october-to-december-2017.csv", "2017-Q4")
+sort(unique(brisbane_complaints$yearquarter),decreasing=FALSE)
+```
+```{r}
+
+```
+
+```{r}
+sum(is.na(brisbane_complaints$responsible_office))
+```
+Responsible office field is having majority of values as null and so this field can omitted for our calculation
+
+```{r}
+BC= subset(brisbane_complaints, select=-c(responsible_office, date_range, nature, city))
+
+sort(unique(BC$yearquarter),decreasing=FALSE)
+```
+```{r}
+BC = BC %>% mutate_at(vars(animal_type,category,suburb, yearquarter),list(factor))
+summary(BC)
+```
+
+
+
+```{r}
+bv2= BC %>% group_by(animal_type) %>% tally() %>% ggplot(aes(x=animal_type, y=n)) +  geom_bar(stat="identity") + labs(x="Animal types", y = "Count", title= "Animal Types", subtitle= "Brisbane Animal Complaints Jan 2016 to June 2020")
+bv2
+```
+```{r}
+# Number of complaints throughout the quarters
+bv3= BC %>% group_by(yearquarter) %>% tally() %>% ggplot(aes(x=yearquarter, y=n, group=1)) + geom_line() + geom_point() + labs(x = "Year-quarter", y = "Number of complaints", title = "Number of complaints throughout the quarters",subtitle= "Brisbane Animal Complaints Jan 2017 to June 2020")
+bv3
+
+```
+
+
+
